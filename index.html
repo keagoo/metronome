@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>噠噠節拍器 Web版</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.png">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="噠噠節拍器">
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <style>
+        body {
+            font-family: "Helvetica Neue", sans-serif;
+            text-align: center;
+            margin: 50px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        #circle {
+            width: 150px;
+            height: 150px;
+            background-color: grey;
+            border-radius: 50%;
+            margin: 20px auto;
+            transition: background-color 0.1s;
+        }
+        #timer {
+            font-size: 1.5em;
+            margin: 20px;
+        }
+        button {
+            font-size: 1.2em;
+            padding: 10px 20px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>噠噠節拍器 Web版</h1>
+    <div id="circle"></div>
+    <div id="timer">下次警示：04:00</div>
+    <button id="startStopBtn">開始</button>
+
+    <audio id="clickSound" src="data:audio/wav;base64,UklGRhYAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA="></audio>
+    <audio id="alertSound" src="data:audio/wav;base64,UklGRhYAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA="></audio>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+            .then(function(registration) {
+                console.log('Service Worker 註冊成功:', registration);
+            }).catch(function(error) {
+                console.log('Service Worker 註冊失敗:', error);
+            });
+        }
+
+        const bpm = 110;
+        const alertInterval = 4 * 60; // 4 minutes in seconds
+        let isPlaying = false;
+        let beatTimer;
+        let secondTimer;
+        let secondsCounter = 0;
+
+        const circle = document.getElementById('circle');
+        const timerDisplay = document.getElementById('timer');
+        const startStopBtn = document.getElementById('startStopBtn');
+        const clickSound = document.getElementById('clickSound');
+        const alertSound = document.getElementById('alertSound');
+
+        function playClick() {
+            clickSound.currentTime = 0;
+            clickSound.play();
+            circle.style.backgroundColor = "green";
+            setTimeout(() => circle.style.backgroundColor = "grey", 100);
+        }
+
+        function playAlert() {
+            alertSound.currentTime = 0;
+            alertSound.play();
+            alert("時間到！");
+        }
+
+        function updateTimer() {
+            const remaining = alertInterval - secondsCounter;
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            timerDisplay.textContent = `下次警示：${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function startMetronome() {
+            isPlaying = true;
+            secondsCounter = 0;
+            beatTimer = setInterval(playClick, (60 / bpm) * 1000);
+            secondTimer = setInterval(() => {
+                secondsCounter++;
+                updateTimer();
+                if (secondsCounter >= alertInterval) {
+                    playAlert();
+                    secondsCounter = 0;
+                }
+            }, 1000);
+            startStopBtn.textContent = "停止";
+        }
+
+        function stopMetronome() {
+            isPlaying = false;
+            clearInterval(beatTimer);
+            clearInterval(secondTimer);
+            startStopBtn.textContent = "開始";
+        }
+
+        startStopBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                stopMetronome();
+            } else {
+                startMetronome();
+            }
+        });
+    </script>
+
+</body>
+</html>
